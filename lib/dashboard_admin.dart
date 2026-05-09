@@ -54,7 +54,7 @@ class DashboardAdminPage extends StatelessWidget {
                 textConfirm: "Ya, Keluar",
                 textCancel: "Batal",
                 confirmTextColor: Colors.white,
-                buttonColor: Colors.red,
+                buttonColor: Colors.green,
                 onConfirm: () {
                   Get.back(); // Menutup dialog
                   _handleLogout(); // Eksekusi proses logout
