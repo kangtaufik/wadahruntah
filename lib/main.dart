@@ -9,7 +9,7 @@ import 'verification_success_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Supabase
+  // Konfigurasi Supabase
   await Supabase.initialize(
     url: 'https://apxbviuerlkssbcgefpj.supabase.co',
     anonKey: 'sb_publishable_uNhEUcw2uHZfDZvJpofX1w_fSaOGFOS',
@@ -31,7 +31,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      defaultTransition: Transition.cupertino, 
       home: const WelcomePage(),
     );
   }
@@ -40,19 +39,19 @@ class MyApp extends StatelessWidget {
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
-  // LOGIKA FIX: Pake currentSession biar nggak error compile
+  // FUNGSI INI KUNCINYA BRAY: Paksa ambil data role dari profiles
   Future<void> handleAuthAndRole() async {
     final session = Supabase.instance.client.auth.currentSession;
     
     if (session != null) {
-      // Munculkan loading bray
+      // 1. Kasih loading biar nggak langsung ke dashboard member
       Get.dialog(
         const Center(child: CircularProgressIndicator(color: Colors.white)),
         barrierDismissible: false,
       );
 
       try {
-        // Ambil data role terbaru
+        // 2. Ambil data role terbaru berdasarkan ID user yang login
         final response = await Supabase.instance.client
             .from('profiles')
             .select('role')
@@ -61,10 +60,10 @@ class WelcomePage extends StatelessWidget {
 
         String role = response['role'] ?? 'member';
         
-        // Tutup loading
+        // 3. Tutup loading bray
         if (Get.isDialogOpen ?? false) Get.back();
 
-        // Pindah halaman sesuai role di database
+        // 4. Cek role dan arahkan ke halaman yang bener
         if (role == 'admin') {
           Get.offAll(() => const DashboardAdminPage());
         } else {
@@ -72,12 +71,11 @@ class WelcomePage extends StatelessWidget {
         }
       } catch (e) {
         if (Get.isDialogOpen ?? false) Get.back();
-        print("Error Role: $e");
-        // Kalau error (misal profile blum dibuat), lempar ke member dulu
+        // Kalau profile belum ada atau error, default ke Member
         Get.offAll(() => const DashboardMember());
       }
     } else {
-      // Kalau belum login sama sekali
+      // Jika belum login, lempar ke halaman login
       Get.to(() => const LoginPage());
     }
   }
@@ -112,6 +110,7 @@ class WelcomePage extends StatelessWidget {
                     foregroundColor: Colors.green,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
+                  // Manggil fungsi pengecekan role bray
                   onPressed: () => handleAuthAndRole(), 
                   child: const Text(
                     'MULAI SEKARANG',

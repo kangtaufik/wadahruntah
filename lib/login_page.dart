@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'register_page.dart';
 import 'dashboard_member.dart';
+import 'dashboard_admin.dart';
+import 'main.dart'; // Import WelcomePage di sini
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,51 +16,44 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscureText = true;
 
-  Future<void> _login() async {
-    // 1. Validasi Input: Memastikan kolom tidak kosong
-    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Informasi', 
-        'Silakan masukkan alamat email dan kata sandi Anda terlebih dahulu.',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(15),
-        icon: const Icon(Icons.info_outline, color: Colors.white),
-      );
+  // FUNGSI INTI: Login + Cek Role Otomatis
+  Future<void> _handleLogin() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      Get.snackbar("Error", "Silahkan isi Email dan Password dengan benar",
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
 
     setState(() => _isLoading = true);
+
     try {
-      // 2. Proses Otentikasi ke Supabase
+      // 1. Proses Login ke Supabase
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       if (response.user != null) {
-        Get.offAll(() => const DashboardMember());
+        // 2. Ambil data ROLE dari tabel profiles secara real-time
+        final profileData = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('id', response.user!.id)
+            .single();
+
+        String role = profileData['role'] ?? 'member';
+
+        // 3. Lempar ke Dashboard yang Sesuai
+        if (role == 'admin') {
+          Get.offAll(() => const DashboardAdminPage());
+        } else {
+          Get.offAll(() => const DashboardMember());
+        }
       }
-    } on AuthException catch (e) {
-      // 3. Penanganan Error Spesifik dari Supabase (Password Salah/User Tidak Ada)
-      Get.snackbar(
-        'Login Gagal', 
-        'Email atau kata sandi yang Anda masukkan tidak sesuai.',
-        backgroundColor: Colors.red, 
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(15),
-      );
     } catch (e) {
-      Get.snackbar(
-        'Kesalahan', 
-        'Terjadi kesalahan sistem: $e',
-        backgroundColor: Colors.red, 
-        colorText: Colors.white,
-      );
+      Get.snackbar("Gagal Login", "Silahkan Cek kembali email atau passwonrd Anda $e",
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -68,72 +62,56 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.recycling, size: 80, color: Colors.green),
-              const SizedBox(height: 16),
-              const Text(
-                'Wadah Runtah',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
+      appBar: AppBar(title: const Text('Login Aplikasi Wadah Runtah')),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // INPUT EMAIL
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
               ),
-              const SizedBox(height: 32),
-              // Input Email
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Alamat Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next, // Pindah ke password pas di-next
+            ),
+            const SizedBox(height: 20),
+
+            // INPUT PASSWORD + FITUR ENTER
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+              ),
+              obscureText: true,
+              textInputAction: TextInputAction.done, // Muncul tombol "Enter/Done" di keyboard
+              onSubmitted: (_) => _handleLogin(), // JALANKAN LOGIN PAS PENCET ENTER
+            ),
+            const SizedBox(height: 30),
+
+            // TOMBOL LOGIN
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                onPressed: _isLoading ? null : _handleLogin,
+                child: _isLoading 
+                  ? const CircularProgressIndicator(color: Colors.white) 
+                  : const Text('LOGIN SEKARANG', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 16),
-              // Input Password dengan fitur Show/Hide
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscureText,
-                decoration: InputDecoration(
-                  labelText: 'Kata Sandi',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscureText = !_obscureText),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              _isLoading
-                  ? const CircularProgressIndicator(color: Colors.green)
-                  : SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: _login,
-                        child: const Text(
-                          'MASUK', 
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-                        ),
-                      ),
-                    ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => Get.to(() => const RegisterPage()),
-                child: const Text(
-                  'Belum memiliki akun? Registrasi di sini', 
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
