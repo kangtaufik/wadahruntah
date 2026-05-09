@@ -42,7 +42,7 @@ class _DashboardMemberState extends State<DashboardMember> {
         _isLoading = false;
       });
     } catch (e) {
-      Get.snackbar('Error', 'Gagal ambil data: $e', backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar('Error', 'Gagal ambil data: $e', backgroundColor: Colors.yellow, colorText: Colors.black);
     }
   }
 
@@ -56,7 +56,7 @@ class _DashboardMemberState extends State<DashboardMember> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard Wadah Runtah', style: TextStyle(color: Colors.white)),
+        title: const Text('Dashboard Member - Bank Sampah - Wadah Runtah', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.green,
         actions: [
           IconButton(
@@ -100,7 +100,7 @@ class _DashboardMemberState extends State<DashboardMember> {
                 Row(
                   children: [
                     Expanded(
-                      child: _statCard('Total Sampah', '${wasteKg.toStringAsFixed(1)} Kg', Icons.delete_outline, Colors.orange),
+                      child: _statCard('Total Sampah', '${wasteKg.toStringAsFixed(1)} Kg', Icons.delete_outline, Colors.yellow),
                     ),
                     const SizedBox(width: 15),
                     Expanded(
@@ -153,7 +153,7 @@ class _DashboardMemberState extends State<DashboardMember> {
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-           Get.snackbar('Info', 'Fitur $title Segera Hadir', backgroundColor: Colors.orange, colorText: Colors.white);
+           Get.snackbar('Info', 'Fitur $title Segera Hadir', backgroundColor: Colors.yellow, colorText: Colors.black);
         },
       ),
     );
