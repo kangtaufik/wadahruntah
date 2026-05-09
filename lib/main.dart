@@ -3,28 +3,22 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 import 'dashboard_member.dart';
-import 'dashboard_admin.dart'; // Import Dashboard Admin yang baru dibuat
+import 'dashboard_admin.dart'; 
 import 'verification_success_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi layanan Supabase (Key lo tetap aman di sini bray)
+  // Inisialisasi Supabase - URL & Key lo tetap aman di sini
   await Supabase.initialize(
     url: 'https://apxbviuerlkssbcgefpj.supabase.co',
     anonKey: 'sb_publishable_uNhEUcw2uHZfDZvJpofX1w_fSaOGFOS',
   );
 
-  // Listener untuk mendeteksi perubahan status autentikasi
+  // Listener untuk verifikasi email otomatis
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-    final AuthChangeEvent event = data.event;
-    
-    if (event == AuthChangeEvent.userUpdated) {
-      Get.offAll(
-        () => const VerificationSuccessPage(),
-        transition: Transition.fadeIn,
-        duration: const Duration(milliseconds: 800),
-      );
+    if (data.event == AuthChangeEvent.userUpdated) {
+      Get.offAll(() => const VerificationSuccessPage());
     }
   });
 
@@ -54,26 +48,30 @@ class MyApp extends StatelessWidget {
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
-  // FUNGSI BARU: Ngecek Role ke Supabase sebelum masuk Dashboard
+  // LOGIKA ANTI-SALAH DASHBOARD: Cek role secara real-time
   Future<void> handleAuthAndRole() async {
     final session = Supabase.instance.client.auth.currentSession;
     
     if (session != null) {
-      // Tampilkan loading sebentar bray
-      Get.dialog(const Center(child: CircularProgressIndicator(color: Colors.white,)), barrierDismissible: false);
+      // Munculkan loading biar nggak loncat ke dashboard salah
+      Get.dialog(
+        const Center(child: CircularProgressIndicator(color: Colors.white)),
+        barrierDismissible: false,
+      );
 
       try {
-        final user = session.user;
+        // Ambil data role dari tabel profiles berdasarkan ID user
         final response = await Supabase.instance.client
             .from('profiles')
             .select('role')
-            .eq('id', user.id)
+            .eq('id', session.user.id)
             .single();
 
         String role = response['role'] ?? 'member';
-
+        
         Get.back(); // Tutup loading
 
+        // Eksekusi pemindahan halaman berdasarkan role database
         if (role == 'admin') {
           Get.offAll(() => const DashboardAdminPage());
         } else {
@@ -81,10 +79,12 @@ class WelcomePage extends StatelessWidget {
         }
       } catch (e) {
         Get.back(); // Tutup loading
-        // Jika profile belum ada atau error, default ke Member
+        print("Error Role: $e");
+        // Jika error, default ke Member bray biar aman
         Get.offAll(() => const DashboardMember());
       }
     } else {
+      // Jika belum login, lempar ke halaman login
       Get.to(() => const LoginPage());
     }
   }
@@ -97,26 +97,11 @@ class WelcomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TweenAnimationBuilder(
-              tween: Tween<double>(begin: 0, end: 1),
-              duration: const Duration(seconds: 2),
-              builder: (context, double value, child) {
-                return Opacity(
-                  opacity: value,
-                  child: Transform.scale(scale: value, child: child),
-                );
-              },
-              child: const Icon(Icons.recycling, size: 120, color: Colors.white),
-            ),
+            const Icon(Icons.recycling, size: 120, color: Colors.white),
             const SizedBox(height: 24),
             const Text(
-              'Wadah Runtah',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
+              'Aplikasi Bank Sampah - Wadah Runtah',
+              style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const Text(
               'Kelola Sampah Jadi Berkah',
@@ -132,14 +117,12 @@ class WelcomePage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.green,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  onPressed: () => handleAuthAndRole(), // Panggil fungsi cek role
+                  // Manggil fungsi pengecekan role yang baru
+                  onPressed: () => handleAuthAndRole(), 
                   child: const Text(
-                    'MULAI SEKARANG',
+                    'Mulai Sekarang',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
