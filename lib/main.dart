@@ -40,21 +40,19 @@ class MyApp extends StatelessWidget {
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
-  // LOGIKA ANTI-PENDING: Nunggu database baru pindah halaman
+  // LOGIKA FIX: Pake currentSession biar nggak error compile
   Future<void> handleAuthAndRole() async {
-    // 1. Cek sesi login terbaru
-    final authResponse = await Supabase.instance.client.auth.getSession();
-    final session = authResponse.session;
+    final session = Supabase.instance.client.auth.currentSession;
     
     if (session != null) {
-      // 2. Munculkan loading biar user nggak klik berkali-kali
+      // Munculkan loading bray
       Get.dialog(
         const Center(child: CircularProgressIndicator(color: Colors.white)),
         barrierDismissible: false,
       );
 
       try {
-        // 3. Ambil data role secara paksa dari database (AWAIT WAJIB)
+        // Ambil data role terbaru
         final response = await Supabase.instance.client
             .from('profiles')
             .select('role')
@@ -63,10 +61,10 @@ class WelcomePage extends StatelessWidget {
 
         String role = response['role'] ?? 'member';
         
-        // 4. Tutup loading sebelum pindah
+        // Tutup loading
         if (Get.isDialogOpen ?? false) Get.back();
 
-        // 5. Pindah halaman sesuai role
+        // Pindah halaman sesuai role di database
         if (role == 'admin') {
           Get.offAll(() => const DashboardAdminPage());
         } else {
@@ -75,10 +73,11 @@ class WelcomePage extends StatelessWidget {
       } catch (e) {
         if (Get.isDialogOpen ?? false) Get.back();
         print("Error Role: $e");
+        // Kalau error (misal profile blum dibuat), lempar ke member dulu
         Get.offAll(() => const DashboardMember());
       }
     } else {
-      // Jika belum login, ke halaman login
+      // Kalau belum login sama sekali
       Get.to(() => const LoginPage());
     }
   }
@@ -94,7 +93,7 @@ class WelcomePage extends StatelessWidget {
             const Icon(Icons.recycling, size: 120, color: Colors.white),
             const SizedBox(height: 24),
             const Text(
-              'Wadah Runtah',
+              'Aplikasi Bank Sampah - Wadah Runtah',
               style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const Text(
