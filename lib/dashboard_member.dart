@@ -114,7 +114,7 @@ class _DashboardMemberState extends State<DashboardMember> {
                 const SizedBox(height: 15),
                 
                 // List Menu Simpel
-                _menuItem(Icons.qr_code_scanner, 'Setor Sampah (Scan)', 'Dalam Pengembangan'),
+                _menuItem(Icons.qr_code_scanner, 'Setor Sampah', 'Dalam Pengembangan'),
                 _menuItem(Icons.history, 'Riwayat Setoran', 'Cek aktivitas Anda'),
                 _menuItem(Icons.card_giftcard, 'Tukar Poin', 'Ambil hadiah menarik'),
               ],
