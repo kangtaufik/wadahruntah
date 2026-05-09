@@ -114,8 +114,8 @@ class _DashboardMemberState extends State<DashboardMember> {
                 const SizedBox(height: 15),
                 
                 // List Menu Simpel
-                _menuItem(Icons.qr_code_scanner, 'Setor Sampah (Scan)', 'Coming Soon'),
-                _menuItem(Icons.history, 'Riwayat Setoran', 'Cek aktivitas lo'),
+                _menuItem(Icons.qr_code_scanner, 'Setor Sampah (Scan)', 'Dalam Pengembangan'),
+                _menuItem(Icons.history, 'Riwayat Setoran', 'Cek aktivitas Anda'),
                 _menuItem(Icons.card_giftcard, 'Tukar Poin', 'Ambil hadiah menarik'),
               ],
             ),
@@ -153,7 +153,7 @@ class _DashboardMemberState extends State<DashboardMember> {
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-           Get.snackbar('Info', 'Fitur $title Mohon tunggu sebentar', backgroundColor: Colors.orange, colorText: Colors.white);
+           Get.snackbar('Info', 'Fitur $title Segera Hadir', backgroundColor: Colors.orange, colorText: Colors.white);
         },
       ),
     );
