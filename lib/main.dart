@@ -3,22 +3,22 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 import 'dashboard_member.dart';
+import 'dashboard_admin.dart'; // Import Dashboard Admin yang baru dibuat
 import 'verification_success_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi layanan Supabase
+  // Inisialisasi layanan Supabase (Key lo tetap aman di sini bray)
   await Supabase.initialize(
     url: 'https://apxbviuerlkssbcgefpj.supabase.co',
     anonKey: 'sb_publishable_uNhEUcw2uHZfDZvJpofX1w_fSaOGFOS',
   );
 
-  // Listener untuk mendeteksi perubahan status autentikasi secara otomatis
+  // Listener untuk mendeteksi perubahan status autentikasi
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
     final AuthChangeEvent event = data.event;
     
-    // Jika user berhasil memverifikasi email, arahkan ke halaman sukses
     if (event == AuthChangeEvent.userUpdated) {
       Get.offAll(
         () => const VerificationSuccessPage(),
@@ -44,11 +44,8 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      
-      // KONFIGURASI TRANSISI GLOBAL (LEBIH HALUS)
       defaultTransition: Transition.cupertino, 
       transitionDuration: const Duration(milliseconds: 600),
-      
       home: const WelcomePage(),
     );
   }
@@ -56,6 +53,41 @@ class MyApp extends StatelessWidget {
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
+
+  // FUNGSI BARU: Ngecek Role ke Supabase sebelum masuk Dashboard
+  Future<void> handleAuthAndRole() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    
+    if (session != null) {
+      // Tampilkan loading sebentar bray
+      Get.dialog(const Center(child: CircularProgressIndicator(color: Colors.white,)), barrierDismissible: false);
+
+      try {
+        final user = session.user;
+        final response = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        String role = response['role'] ?? 'member';
+
+        Get.back(); // Tutup loading
+
+        if (role == 'admin') {
+          Get.offAll(() => const DashboardAdminPage());
+        } else {
+          Get.offAll(() => const DashboardMember());
+        }
+      } catch (e) {
+        Get.back(); // Tutup loading
+        // Jika profile belum ada atau error, default ke Member
+        Get.offAll(() => const DashboardMember());
+      }
+    } else {
+      Get.to(() => const LoginPage());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +97,6 @@ class WelcomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animasi transisi masuk untuk logo
             TweenAnimationBuilder(
               tween: Tween<double>(begin: 0, end: 1),
               duration: const Duration(seconds: 2),
@@ -106,14 +137,7 @@ class WelcomePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  onPressed: () {
-                    final session = Supabase.instance.client.auth.currentSession;
-                    if (session != null) {
-                      Get.offAll(() => const DashboardMember());
-                    } else {
-                      Get.to(() => const LoginPage());
-                    }
-                  },
+                  onPressed: () => handleAuthAndRole(), // Panggil fungsi cek role
                   child: const Text(
                     'MULAI SEKARANG',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
