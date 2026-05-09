@@ -58,9 +58,9 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard Admin - Wadah Runtah', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text('Dashboard Admin - Bank Sampah - Wadah Runtah', 
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.blue[800],
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -71,7 +71,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
             onPressed: () {
               Get.defaultDialog(
                 title: "Konfirmasi",
-                middleText: "Keluar dari dashboard ?",
+                middleText: "Keluar dari sistem ?",
                 textConfirm: "Ya",
                 textCancel: "Batal",
                 onConfirm: () => _handleLogout(),
@@ -93,15 +93,15 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                 Row(
                   children: [
                     // Menampilkan data Member sesuai yang Anda minta
-                    _buildStatCard("Total Member", "$_totalMember", Colors.green, Icons.group),
+                    _buildStatCard("Total Member", "$_totalMember", Colors.blue, Icons.group),
                     const SizedBox(width: 15),
-                    _buildStatCard("Total Sampah", "${_totalSampah.toStringAsFixed(1)} Kg", Colors.yellow, Icons.delete),
+                    _buildStatCard("Total Sampah", "${_totalSampah.toStringAsFixed(1)} Kg", Colors.orange, Icons.delete),
                   ],
                 ),
                 const SizedBox(height: 30),
                 const Center(
-                  child: Text("Data ditarik otomatis dari tabel profiles Supabase",
-                    style: TextStyle(color: Colors.green, fontSize: 12)),
+                  child: Text("Data ditarik otomatis realtime",
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
                 )
               ],
             ),
