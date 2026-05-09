@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dashboard_member.dart';
 import 'dashboard_admin.dart';
 import 'register_page.dart';
-import 'main.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,10 +16,12 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isObscured = true; // Kontrol tampil/sembunyi password
 
-  /// Fungsi untuk menangani proses login dan validasi Role
+  /// Fungsi Login
   Future<void> _handleLogin() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    // Validasi input kosong
+    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
       Get.snackbar(
         "Informasi",
         "Silakan masukkan email dan kata sandi Anda.",
@@ -34,14 +35,14 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Proses Autentikasi melalui Supabase
+      // 1. Proses Autentikasi Supabase
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       if (response.user != null) {
-        // 2. Pengambilan data Role pengguna dari tabel profiles
+        // 2. Ambil Role dari tabel profiles
         final profileData = await Supabase.instance.client
             .from('profiles')
             .select('role')
@@ -50,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
 
         String role = profileData['role'] ?? 'member';
 
-        // 3. Pengalihan halaman berdasarkan hak akses (Role)
+        // 3. Arahkan sesuai Role
         if (role == 'admin') {
           Get.offAll(() => const DashboardAdminPage());
         } else {
@@ -58,9 +59,12 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
     } catch (e) {
+      // Log error ke console buat debug
+      print("Error Login: $e");
+      
       Get.snackbar(
         "Login Gagal",
-        "Email atau kata sandi yang Anda masukkan salah.",
+        "Email atau kata sandi salah. Pastikan akun sudah dikonfirmasi di Supabase.",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -74,86 +78,93 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Masuk ke Aplikasi Wadah Runtah'),
+        title: const Text('Login Wadah Runtah'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.recycling, size: 100, color: Colors.green),
-            const SizedBox(height: 40),
-            
-            // Input Field Email
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Alamat Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.recycling, size: 80, color: Colors.green),
+              const SizedBox(height: 20),
+              const Text(
+                "Selamat Datang",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 20),
-            
-            // Input Field Password dengan fungsi 'onSubmitted' (Enter)
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Kata Sandi',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
+              const SizedBox(height: 40),
+              
+              // Input Email
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
               ),
-              obscureText: true,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _handleLogin(), // Mendukung tombol Enter
-            ),
-            const SizedBox(height: 30),
-            
-            // Tombol Login Utama
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 20),
+              
+              // Input Password + Fitur Mata
+              TextField(
+                controller: _passwordController,
+                obscureText: _isObscured,
+                decoration: InputDecoration(
+                  labelText: 'Kata Sandi',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscured ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isObscured = !_isObscured;
+                      });
+                    },
                   ),
                 ),
-                onPressed: _isLoading ? null : _handleLogin,
-                child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white) 
-                  : const Text(
-                      'MASUK', 
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _handleLogin(),
               ),
-            ),
-            const SizedBox(height: 30),
-            
-            // Tautan Registrasi Member
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Belum memiliki akun? "),
-                GestureDetector(
-                  onTap: () => Get.to(() => const RegisterPage()),
-                  child: const Text(
-                    "Daftar Sebagai Member",
-                    style: TextStyle(
-                      color: Colors.green, 
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.underline,
+              const SizedBox(height: 30),
+              
+              // Tombol Masuk
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  onPressed: _isLoading ? null : _handleLogin,
+                  child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white) 
+                    : const Text('MASUK', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Navigasi Daftar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Belum punya akun? "),
+                  TextButton(
+                    onPressed: () => Get.to(() => const RegisterPage()),
+                    child: const Text("Daftar", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
