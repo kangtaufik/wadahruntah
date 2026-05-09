@@ -1,82 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'register_page.dart';
 import 'dashboard_member.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscureText = true;
+
+  Future<void> _login() async {
+    // 1. Validasi Input: Memastikan kolom tidak kosong
+    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+      Get.snackbar(
+        'Informasi', 
+        'Silakan masukkan alamat email dan kata sandi Anda terlebih dahulu.',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(15),
+        icon: const Icon(Icons.info_outline, color: Colors.white),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      // 2. Proses Otentikasi ke Supabase
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (response.user != null) {
+        Get.offAll(() => const DashboardMember());
+      }
+    } on AuthException catch (e) {
+      // 3. Penanganan Error Spesifik dari Supabase (Password Salah/User Tidak Ada)
+      Get.snackbar(
+        'Login Gagal', 
+        'Email atau kata sandi yang Anda masukkan tidak sesuai.',
+        backgroundColor: Colors.red, 
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(15),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Kesalahan', 
+        'Terjadi kesalahan sistem: $e',
+        backgroundColor: Colors.red, 
+        colorText: Colors.white,
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Icon(Icons.recycling, size: 80, color: Colors.green),
               const SizedBox(height: 16),
               const Text(
-                'Selamat Datang di\nWadah Runtah',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24, 
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 40),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Nomor HP',
-                  prefixIcon: const Icon(Icons.phone, color: Colors.green),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.green, width: 2),
-                  ),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock, color: Colors.green),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.green, width: 2),
-                  ),
-                ),
-                obscureText: true,
+                'Wadah Runtah',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
               ),
               const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Input Email
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Input Password dengan fitur Show/Hide
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscureText,
+                decoration: InputDecoration(
+                  labelText: 'Kata Sandi',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () => setState(() => _obscureText = !_obscureText),
                   ),
                 ),
-                onPressed: () {
-                  // INI YANG BIKIN PINDAH HALAMAN
-                  Get.offAll(() => const DashboardMember());
-                },
+              ),
+              const SizedBox(height: 24),
+              _isLoading
+                  ? const CircularProgressIndicator(color: Colors.green)
+                  : SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: _login,
+                        child: const Text(
+                          'MASUK', 
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                        ),
+                      ),
+                    ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Get.to(() => const RegisterPage()),
                 child: const Text(
-                  'MASUK', 
-                  style: TextStyle(
-                    fontSize: 16, 
-                    color: Colors.white, 
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Belum memiliki akun? Registrasi di sini', 
+                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)
                 ),
               ),
             ],
