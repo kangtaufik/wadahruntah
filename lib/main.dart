@@ -10,7 +10,7 @@ void main() async {
   await Supabase.initialize(
     url: 'https://apxbviuerlkssbcgefpj.supabase.co',
     anonKey:
-        'sb_publishable_uNhEUcw2uHZfDZvJpofX1w_fSaOGFOS', // <--- GANTI TEKS INI DENGAN KUNCI YANG ANDA SALIN
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFweGJ2aXVlcmxrc3NiY2dlZnBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjgxNDksImV4cCI6MjA5MzkwNDE0OX0.dGuIG7Tvlcqvj226rsjLAF4Xp680EYkxM1rhkmwNF-A', // <--- GANTI TEKS INI DENGAN KUNCI YANG ANDA SALIN
   );
 
   runApp(const MyApp());
