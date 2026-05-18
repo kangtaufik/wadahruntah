@@ -5,7 +5,7 @@ import 'dashboard_admin.dart';
 import 'dashboard_member.dart';
 import 'dashboard_tenant.dart';
 import 'register_member_page.dart';
-import 'register_tenant_page.dart';
+import 'register_tenant_page.dart'; // Memastikan import halaman daftar tenant aktif
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,12 +19,14 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscureText = true;
+  final supabase = Supabase.instance.client;
 
   Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
       Get.snackbar(
         'Peringatan',
-        'Email dan password tidak boleh kosong.',
+        'Email dan kata sandi tidak boleh kosong.',
         backgroundColor: Colors.orange,
         colorText: Colors.white,
       );
@@ -34,8 +36,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Proses Autentikasi ke Supabase
-      final response = await Supabase.instance.client.auth.signInWithPassword(
+      final response = await supabase.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -43,28 +44,56 @@ class _LoginPageState extends State<LoginPage> {
       if (response.user != null) {
         final userId = response.user!.id;
 
-        // 2. Ambil Role Pengguna dari Tabel Profiles
-        final profileData = await Supabase.instance.client
+        final tenantCheck = await supabase
+            .from('tenants')
+            .select('status')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (tenantCheck != null) {
+          if (tenantCheck['status'] == 'approved') {
+            Get.offAll(() => const DashboardTenantPage());
+          } else {
+            await supabase.auth.signOut();
+            Get.snackbar(
+              'Akses Ditangguhkan',
+              'Akun Mitra Tenant Anda belum disetujui oleh Admin pusat.',
+              backgroundColor: Colors.orange,
+              colorText: Colors.white,
+            );
+          }
+          return;
+        }
+
+        final profileCheck = await supabase
             .from('profiles')
             .select('role')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
-        String role = profileData['role'] ?? 'member';
-
-        // 3. Multi-Role Routing (Pengalihan Halaman Sesuai Role)
-        if (role == 'admin') {
-          Get.offAll(() => const DashboardAdminPage());
-        } else if (role == 'tenant') {
-          Get.offAll(() => const DashboardTenantPage());
-        } else {
-          Get.offAll(() => const DashboardMember());
+        if (profileCheck != null) {
+          String role = profileCheck['role'] ?? 'member';
+          if (role == 'admin') {
+            Get.offAll(() => const DashboardAdminPage());
+          } else {
+            Get.offAll(() => const DashboardMember());
+          }
+          return;
         }
+
+        Get.offAll(() => const DashboardMember());
       }
+    } on AuthException catch (error) {
+      Get.snackbar(
+        'Login Gagal',
+        error.message,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } catch (e) {
       Get.snackbar(
-        'Gagal Masuk',
-        'Email atau password salah, atau terjadi kendala jaringan.',
+        'Error',
+        'Terjadi kesalahan sistem: $e',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -79,113 +108,124 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.grey[100],
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 450),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.recycling, size: 80, color: Colors.green),
-                const SizedBox(height: 12),
-                const Text(
-                  'WADAH RUNTAH',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                constraints: const BoxConstraints(maxWidth: 400),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 10),
+                  ],
                 ),
-                const Text(
-                  'Aplikasi Sistem Pengelolaan Bank Sampah',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscureText,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureText ? Icons.visibility_off : Icons.visibility,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.recycling, size: 60, color: Colors.green),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Wadah Runtah",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscureText = !_obscureText),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                _isLoading
-                    ? const CircularProgressIndicator(color: Colors.green)
-                    : SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Alamat Email',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscureText,
+                      decoration: InputDecoration(
+                        labelText: 'Kata Sandi',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureText
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
-                          onPressed: _login,
+                          onPressed: () =>
+                              setState(() => _obscureText = !_obscureText),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _isLoading
+                        ? const CircularProgressIndicator(color: Colors.green)
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                              ),
+                              onPressed: _login,
+                              child: const Text(
+                                'MASUK APLIKASI',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                    const SizedBox(height: 16),
+                    // MENAMPILKAN KEMBALI KEDUA OPSI REGISTRASI
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () =>
+                              Get.to(() => const RegisterMemberPage()),
                           child: const Text(
-                            'MASUK',
+                            'Daftar Member',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.green,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 12),
-
-                const Text('Belum punya akun? Daftar sebagai:'),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () =>
-                            Get.to(() => const RegisterMemberPage()),
-                        child: const Text(
-                          'Member',
-                          style: TextStyle(color: Colors.green),
+                        TextButton(
+                          onPressed: () =>
+                              Get.to(() => const RegisterTenantPage()),
+                          child: const Text(
+                            'Daftar Mitra Tenant',
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () =>
-                            Get.to(() => const RegisterTenantPage()),
-                        child: const Text(
-                          'Mitra Tenant',
-                          style: TextStyle(color: Colors.orange),
-                        ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "Powered By PT. Kopi Pasteu Indonesia",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
         ),
       ),

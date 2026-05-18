@@ -13,7 +13,7 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   final _beratController = TextEditingController();
   final supabase = Supabase.instance.client;
 
-  List<dynamic> _categories = []; // Menampung data jenis sampah dari database
+  List<dynamic> _categories = [];
   String? _selectedCategoryName;
   int _currentPricePerKg = 0;
   int _estimasiPoin = 0;
@@ -23,10 +23,9 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
   @override
   void initState() {
     super.initState();
-    _fetchWasteCategories(); // Ambil data live dari Supabase pas halaman dibuka
+    _fetchWasteCategories();
   }
 
-  // --- 1. AMBIL DATA MASTER HARGA SAMPAH DARI SUPABASE ---
   Future<void> _fetchWasteCategories() async {
     try {
       final data = await supabase
@@ -39,13 +38,16 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
         _isPageLoading = false;
       });
     } catch (e) {
-      Get.snackbar('Error', 'Gagal mengambil data harga sampah: $e',
-          backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        'Error',
+        'Gagal mengambil data harga sampah: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       setState(() => _isPageLoading = false);
     }
   }
 
-  // --- 2. HITUNG POIN OTOMATIS BERDASARKAN BERAT ---
   void _hitungPoin(String value) {
     if (value.isEmpty || _selectedCategoryName == null) {
       setState(() => _estimasiPoin = 0);
@@ -59,11 +61,14 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
     }
   }
 
-  // --- 3. PROSES KIRIM TIKET ANTREAN SETORAN ---
   Future<void> _kirimSetoran() async {
     if (_selectedCategoryName == null || _beratController.text.isEmpty) {
-      Get.snackbar('Peringatan', 'Mohon pilih jenis sampah dan isi beratnya.',
-          backgroundColor: Colors.orange, colorText: Colors.white);
+      Get.snackbar(
+        'Peringatan',
+        'Mohon pilih jenis sampah and isi beratnya.',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -71,7 +76,6 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
     try {
       final user = supabase.auth.currentUser;
       if (user != null) {
-        // Data masuk ke tabel 'deposits' dengan status awal 'pending'
         await supabase.from('deposits').insert({
           'member_id': user.id,
           'jenis_sampah': _selectedCategoryName,
@@ -83,20 +87,25 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
 
         Get.defaultDialog(
           title: "Berhasil!",
-          middleText: "Tiket setoran berhasil dibuat. Silakan bawa sampah Anda ke petugas terdekat untuk ditimbang.",
+          middleText:
+              "Tiket setoran berhasil dibuat. Silakan bawa sampah Anda ke petugas terdekat.",
           textConfirm: "OK",
           confirmTextColor: Colors.white,
           buttonColor: Colors.green,
           onConfirm: () {
-            Get.back(); // Tutup dialog
-            Get.back(); // Balik ke Dashboard Member
+            Get.back();
+            Get.back();
           },
         );
       }
     } catch (e) {
-      Get.snackbar('Gagal', 'Gagal membuat tiket setoran: $e',
-          backgroundColor: Colors.red, colorText: Colors.white);
-    } final {
+      Get.snackbar(
+        'Gagal',
+        'Gagal membuat tiket: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
       setState(() => _isSubmitLoading = false);
     }
   }
@@ -120,29 +129,40 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 10),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         "Pilih Kategori & Berat Sampah",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 20),
 
-                      // DROPDOWN DATA LIVE DARI DB
                       DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: "Jenis Sampah", border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          labelText: "Jenis Sampah",
+                          border: OutlineInputBorder(),
+                        ),
                         value: _selectedCategoryName,
                         items: _categories.map((cat) {
                           return DropdownMenuItem<String>(
                             value: cat['name'].toString(),
-                            child: Text("${cat['name']} (${cat['points_per_kg']} Poin/Kg)"),
+                            child: Text(
+                              "${cat['name']} (${cat['points_per_kg']} Poin/Kg)",
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
-                          final selectedItem = _categories.firstWhere((element) => element['name'] == val);
+                          final selectedItem = _categories.firstWhere(
+                            (element) => element['name'] == val,
+                          );
                           setState(() {
                             _selectedCategoryName = val;
                             _currentPricePerKg = selectedItem['points_per_kg'];
@@ -152,10 +172,11 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // INPUT BERAT SAMPAH
                       TextField(
                         controller: _beratController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           labelText: "Perkiraan Berat (Kg)",
                           border: OutlineInputBorder(),
@@ -165,7 +186,6 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // BOX ESTIMASI POIN
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -175,30 +195,46 @@ class _SetorSampahPageState extends State<SetorSampahPage> {
                           border: Border.all(color: Colors.green[200]!),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.between,
+                          mainAxisAlignment: MainAxisAlignment
+                              .spaceBetween, // PERBAIKAN DI SINI
                           children: [
-                            const Text("Estimasi Poin Diperoleh:", style: TextStyle(fontWeight: FontWeight.w600)),
+                            const Text(
+                              "Estimasi Poin Diperoleh:",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
                             Text(
                               "$_estimasiPoin Poin",
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 32),
 
-                      // TOMBOL SUBMIT TIKET
                       _isSubmitLoading
-                          ? const Center(child: CircularProgressIndicator(color: Colors.green))
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.green,
+                              ),
+                            )
                           : SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                ),
                                 onPressed: _kirimSetoran,
                                 child: const Text(
                                   'BUAT TIKET SETORAN',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),

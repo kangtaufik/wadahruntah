@@ -38,7 +38,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
   LatLng _pickedLocation = const LatLng(-6.8833, 107.6833);
   final MapController _mapController = MapController();
 
-  XFile? _imageKtp;
   Uint8List? _imageBytes;
   bool _isLoading = false;
   bool _obscureText = true;
@@ -139,7 +138,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
       }
 
       setState(() {
-        _imageKtp = pickedFile;
         _imageBytes = fileBytes;
       });
     }
@@ -166,7 +164,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
 
     setState(() => _isLoading = true);
     try {
-      // VALIDASI NOMOR HP GANDA (RESTRICTION LOGIC)
       final checkPhone = await Supabase.instance.client
           .from('profiles')
           .select('role')
@@ -230,7 +227,7 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
       String errorMsg = 'Terjadi kesalahan autentikasi.';
       if (error.message.contains('already exists') ||
           error.statusCode == '400') {
-        errorMsg = 'Email ini sudah terdaftar di sistem Wadah Runtah!';
+        errorMsg = 'Email ini sudah terdaftar di sistem Aplikasi Wadah Runtah!';
       }
       Get.snackbar(
         'Registrasi Gagal',
@@ -255,7 +252,7 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Registrasi Member Wadah Runtah',
+          'Daftar Member',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.green,
