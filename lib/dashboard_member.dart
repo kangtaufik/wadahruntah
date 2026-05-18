@@ -11,150 +11,147 @@ class DashboardMember extends StatefulWidget {
 }
 
 class _DashboardMemberState extends State<DashboardMember> {
-  final supabase = Supabase.instance.client;
-  bool _isLoading = true;
-  
-  // Data Warga
-  String name = "...";
+  String fullName = "User";
   int points = 0;
-  double wasteKg = 0.0;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadProfile();
   }
 
-  // Fungsi buat narik data asli dari Tabel Profiles di Supabase
-  Future<void> _loadUserData() async {
-    try {
-      final userId = supabase.auth.currentUser!.id;
-      final data = await supabase
+  Future<void> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final data = await Supabase.instance.client
           .from('profiles')
-          .select()
-          .eq('id', userId)
+          .select('full_name')
+          .eq('id', user.id)
           .single();
-
       setState(() {
-        name = data['full_name'] ?? 'Warga Girimekar';
-        points = data['total_points'] ?? 0;
-        wasteKg = (data['total_waste_kg'] ?? 0).toDouble();
+        fullName = data['full_name'] ?? "User";
         _isLoading = false;
       });
-    } catch (e) {
-      Get.snackbar('Error', 'Gagal ambil data: $e', backgroundColor: Colors.yellow, colorText: Colors.black);
     }
-  }
-
-  // Fungsi Logout
-  Future<void> _logout() async {
-    await supabase.auth.signOut();
-    Get.offAll(() => const LoginPage());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Dashboard Member - Bank Sampah - Wadah Runtah', style: TextStyle(color: Colors.white)),
+        title: const Text("Dashboard Warga"),
+        elevation: 0,
         backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
-          )
+            onPressed: () => Get.offAll(() => const LoginPage()),
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.green))
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Selamat Datang,', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green)),
-                const SizedBox(height: 25),
-                
-                // Card Saldo Poin
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Halo, $fullName!",
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  child: Column(
+                  const SizedBox(height: 20),
+
+                  // Kartu Saldo Poin
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Total Poin Anda",
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          "$points Poin",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Divider(color: Colors.white54),
+                        const Text(
+                          "Setara: Rp 0",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+                  const Text(
+                    "Menu Utama",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Grid Menu
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 15,
+                    crossAxisSpacing: 15,
                     children: [
-                      const Text('TOTAL SALDO POIN', style: TextStyle(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 10),
-                      Text('$points Poin', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+                      _buildMenuCard(
+                        Icons.delete_sweep,
+                        "Setor Sampah",
+                        Colors.blue,
+                      ),
+                      _buildMenuCard(Icons.history, "Riwayat", Colors.orange),
+                      _buildMenuCard(
+                        Icons.shopping_bag,
+                        "Tukar Poin",
+                        Colors.purple,
+                      ),
+                      _buildMenuCard(Icons.info, "Edukasi", Colors.teal),
                     ],
                   ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Card Statistik Sampah
-                Row(
-                  children: [
-                    Expanded(
-                      child: _statCard('Total Sampah', '${wasteKg.toStringAsFixed(1)} Kg', Icons.delete_outline, Colors.yellow),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: _statCard('Status Akun', 'Aktif', Icons.check_circle_outline, Colors.blue),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 30),
-                const Text('Menu Utama', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 15),
-                
-                // List Menu Simpel
-                _menuItem(Icons.qr_code_scanner, 'Setor Sampah', 'Dalam Pengembangan'),
-                _menuItem(Icons.history, 'Riwayat Setoran', 'Cek aktivitas Anda'),
-                _menuItem(Icons.card_giftcard, 'Tukar Poin', 'Ambil hadiah menarik'),
-              ],
+                ],
+              ),
             ),
-          ),
     );
   }
 
-  Widget _statCard(String title, String value, IconData icon, Color color) {
+  Widget _buildMenuCard(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 10),
-          Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
         ],
       ),
-    );
-  }
-
-  Widget _menuItem(IconData icon, String title, String subtitle) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.green),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-           Get.snackbar('Info', 'Fitur $title Segera Hadir', backgroundColor: Colors.yellow, colorText: Colors.black);
-        },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 40, color: color),
+          const SizedBox(height: 10),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

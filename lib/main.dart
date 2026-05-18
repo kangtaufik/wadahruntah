@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 import 'dashboard_member.dart';
-import 'dashboard_admin.dart'; 
+import 'dashboard_admin.dart';
 import 'verification_success_page.dart';
 
 void main() async {
@@ -42,7 +42,7 @@ class WelcomePage extends StatelessWidget {
   // FUNGSI INI KUNCINYA BRAY: Paksa ambil data role dari profiles
   Future<void> handleAuthAndRole() async {
     final session = Supabase.instance.client.auth.currentSession;
-    
+
     if (session != null) {
       // 1. Kasih loading biar nggak langsung ke dashboard member
       Get.dialog(
@@ -59,7 +59,7 @@ class WelcomePage extends StatelessWidget {
             .single();
 
         String role = response['role'] ?? 'member';
-        
+
         // 3. Tutup loading bray
         if (Get.isDialogOpen ?? false) Get.back();
 
@@ -91,8 +91,12 @@ class WelcomePage extends StatelessWidget {
             const Icon(Icons.recycling, size: 120, color: Colors.white),
             const SizedBox(height: 24),
             const Text(
-              'Aplikasi Bank Sampah - Wadah Runtah',
-              style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+              'Wadah Runtah - Aplikasi Pengelolaan Bank Sampah',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const Text(
               'Kelola Sampah Jadi Berkah',
@@ -108,10 +112,12 @@ class WelcomePage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   // Manggil fungsi pengecekan role bray
-                  onPressed: () => handleAuthAndRole(), 
+                  onPressed: () => handleAuthAndRole(),
                   child: const Text(
                     'MULAI SEKARANG',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

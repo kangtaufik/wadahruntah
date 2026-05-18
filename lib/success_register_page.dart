@@ -10,31 +10,45 @@ class SuccessRegisterPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mark_email_read, size: 100, color: Colors.green),
+              const Icon(
+                Icons.check_circle_outline,
+                size: 100,
+                color: Colors.green,
+              ),
               const SizedBox(height: 24),
               const Text(
-                'Registrasi Berhasil!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green),
-                textAlign: TextAlign.center,
+                'Pendaftaran Berhasil!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               const Text(
-                'Selamat akun anda sudah berhasil dibuat. Silakan cek email untuk mengaktivasi akun anda',
-                style: TextStyle(fontSize: 16),
+                'Terima kasih telah bergabung dengan Aplikasi Bank Sampah - Wadah Runtah. Jika Anda mendaftar sebagai Mitra Tenant, mohon tunggu verifikasi admin dalam 1x24 jam.',
                 textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: () => Get.offAll(() => const LoginPage()),
-                  child: const Text('Kembali Ke Halaman Login', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'KEMBALI KE LOGIN',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],

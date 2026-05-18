@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'main.dart';
+import 'login_page.dart';
+import 'manage_waste_categories_page.dart';
+import 'verify_deposits_page.dart';
 
 class DashboardAdminPage extends StatefulWidget {
   const DashboardAdminPage({super.key});
@@ -12,118 +13,216 @@ class DashboardAdminPage extends StatefulWidget {
 }
 
 class _DashboardAdminPageState extends State<DashboardAdminPage> {
-  final _supabase = Supabase.instance.client;
-  int _totalMember = 0; // Menggunakan variabel member sesuai keinginan Anda
-  double _totalSampah = 0;
-  bool _isLoading = false;
+  final supabase = Supabase.instance.client;
+  List<dynamic> _pendingTenants = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _fetchPendingTenants(); // Ambil daftar toko yang nunggu verifikasi berkas
   }
 
-  // Fungsi untuk menarik data Member dan Statistik Sampah
-  Future<void> _fetchData() async {
+  // --- 1. AMBIL DATA TENANT PENDING DARI DB ---
+  Future<void> _fetchPendingTenants() async {
     setState(() => _isLoading = true);
     try {
-      // Menghitung jumlah akun yang terdaftar di tabel profiles
-      final memberRes = await _supabase.from('profiles').select('id');
-      
-      // Mengambil data berat sampah dari tabel transactions (jika ada)
-      final transRes = await _supabase.from('transactions').select('weight');
-      
-      double weightSum = 0;
-      for (var item in transRes) {
-        weightSum += (item['weight'] ?? 0).toDouble();
-      }
-
+      final data = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('status', 'pending');
       setState(() {
-        _totalMember = memberRes.length;
-        _totalSampah = weightSum;
+        _pendingTenants = data;
+        _isLoading = false;
       });
     } catch (e) {
-      debugPrint("Log: Tabel transaksi mungkin belum tersedia: $e");
-    } finally {
+      Get.snackbar(
+        'Error',
+        'Gagal memuat data tenant: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _handleLogout() async {
-    await _supabase.auth.signOut();
-    Get.offAll(() => const WelcomePage());
+  // --- 2. PROSES UPDATE STATUS TENANT (SETUJUI / TOLAK) ---
+  Future<void> _updateTenantStatus(String tenantId, String status) async {
+    try {
+      await supabase
+          .from('tenants')
+          .update({'status': status})
+          .eq('id', tenantId);
+
+      _fetchPendingTenants(); // Refresh data antrean secara live
+
+      Get.snackbar(
+        'Sukses',
+        'Status mitra berhasil diperbarui menjadi $status.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Gagal',
+        'Gagal memperbarui status mitra: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Dashboard Admin - Bank Sampah - Wadah Runtah', 
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.blue[800],
+        title: const Text("Dashboard Pusat Admin"),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _fetchData,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              Get.defaultDialog(
-                title: "Konfirmasi",
-                middleText: "Keluar dari sistem ?",
-                textConfirm: "Ya",
-                textCancel: "Batal",
-                onConfirm: () => _handleLogout(),
-              );
-            },
+            onPressed: () => Get.offAll(() => const LoginPage()),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Menu Utama Pengendalian Admin",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 15),
+
+            // HUBUNGAN TOMBOL NAVIGASI UTAMA ADMIN
+            Row(
               children: [
-                Text("Statistik Member & Sampah", 
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    // Menampilkan data Member sesuai yang Anda minta
-                    _buildStatCard("Total Member", "$_totalMember", Colors.blue, Icons.group),
-                    const SizedBox(width: 15),
-                    _buildStatCard("Total Sampah", "${_totalSampah.toStringAsFixed(1)} Kg", Colors.orange, Icons.delete),
-                  ],
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Get.to(() => const VerifyDepositsPage()),
+                    icon: const Icon(Icons.fact_check, color: Colors.white),
+                    label: const Text(
+                      "Verifikasi Setoran Warga",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 30),
-                const Center(
-                  child: Text("Data ditarik otomatis realtime",
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
-                )
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        Get.to(() => const ManageWasteCategoriesPage()),
+                    icon: const Icon(Icons.settings, color: Colors.white),
+                    label: const Text(
+                      "Kelola Harga Sampah",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
-    );
-  }
 
-  Widget _buildStatCard(String title, String value, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: color),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 30),
-            const SizedBox(height: 10),
-            Text(title, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
-            Text(value, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 30),
+            const Text(
+              "Antrean Verifikasi Berkas Mitra Tenant",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 15),
+
+            // DAFTAR ANTREAN VERIFIKASI MITRA TENANT (TOKO)
+            _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.blue),
+                  )
+                : _pendingTenants.isEmpty
+                ? const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: Center(
+                        child: Text(
+                          "Bersih! Tidak ada antrean verifikasi toko/tenant saat ini.",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _pendingTenants.length,
+                    itemBuilder: (context, index) {
+                      final tenant = _pendingTenants[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tenant['nama_toko'] ?? 'Nama Toko Kosong',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text("Alamat Usaha: ${tenant['alamat'] ?? '-'}"),
+                              const SizedBox(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  OutlinedButton(
+                                    onPressed: () => _updateTenantStatus(
+                                      tenant['id'],
+                                      'rejected',
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
+                                    child: const Text("TOLAK"),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  ElevatedButton(
+                                    onPressed: () => _updateTenantStatus(
+                                      tenant['id'],
+                                      'approved',
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                    ),
+                                    child: const Text(
+                                      "SETUJUI MITRA",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ],
         ),
       ),
