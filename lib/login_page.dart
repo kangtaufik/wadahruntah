@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dashboard_admin.dart';
-import 'dashboard_member.dart';
-import 'dashboard_tenant.dart';
 import 'register_member_page.dart';
-import 'register_tenant_page.dart'; // Memastikan import halaman daftar tenant aktif
+import 'register_tenant_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,53 +33,15 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await supabase.auth.signInWithPassword(
+      // Proses autentikasi ke Supabase
+      await supabase.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      if (response.user != null) {
-        final userId = response.user!.id;
-
-        final tenantCheck = await supabase
-            .from('tenants')
-            .select('status')
-            .eq('id', userId)
-            .maybeSingle();
-
-        if (tenantCheck != null) {
-          if (tenantCheck['status'] == 'approved') {
-            Get.offAll(() => const DashboardTenantPage());
-          } else {
-            await supabase.auth.signOut();
-            Get.snackbar(
-              'Akses Ditangguhkan',
-              'Akun Mitra Tenant Anda belum disetujui oleh Admin pusat.',
-              backgroundColor: Colors.orange,
-              colorText: Colors.white,
-            );
-          }
-          return;
-        }
-
-        final profileCheck = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', userId)
-            .maybeSingle();
-
-        if (profileCheck != null) {
-          String role = profileCheck['role'] ?? 'member';
-          if (role == 'admin') {
-            Get.offAll(() => const DashboardAdminPage());
-          } else {
-            Get.offAll(() => const DashboardMember());
-          }
-          return;
-        }
-
-        Get.offAll(() => const DashboardMember());
-      }
+      // CATATAN: Tidak perlu Get.offAll() ke dashboard di sini.
+      // Begitu login sukses, AuthWrapper di main.dart akan otomatis membaca statusnya
+      // dan mengarahkan user ke halaman yang sesuai berdasarkan role.
     } on AuthException catch (error) {
       Get.snackbar(
         'Login Gagal',
@@ -98,8 +57,18 @@ class _LoginPageState extends State<LoginPage> {
         colorText: Colors.white,
       );
     } finally {
-      setState(() => _isLoading = false);
+      // Pengaman agar tidak memicu error "setState() called after dispose()"
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -184,7 +153,6 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                     const SizedBox(height: 16),
-                    // MENAMPILKAN KEMBALI KEDUA OPSI REGISTRASI
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
