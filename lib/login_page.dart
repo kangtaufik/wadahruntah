@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dashboard_admin.dart';
+import 'dashboard_member.dart';
+import 'dashboard_tenant.dart';
 import 'register_member_page.dart';
 import 'register_tenant_page.dart';
 
@@ -33,15 +36,56 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Proses autentikasi ke Supabase
-      await supabase.auth.signInWithPassword(
+      final response = await supabase.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // CATATAN: Tidak perlu Get.offAll() ke dashboard di sini.
-      // Begitu login sukses, AuthWrapper di main.dart akan otomatis membaca statusnya
-      // dan mengarahkan user ke halaman yang sesuai berdasarkan role.
+      if (response.user != null) {
+        final userId = response.user!.id;
+
+        // 1. Cek apakah user adalah Tenant
+        final tenantCheck = await supabase
+            .from('tenants')
+            .select('status')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (tenantCheck != null) {
+          if (tenantCheck['status'] == 'approved') {
+            Get.offAll(() => DashboardTenantPage());
+          } else {
+            await supabase.auth.signOut();
+            Get.snackbar(
+              'Akses Ditangguhkan',
+              'Akun Mitra Tenant Anda belum disetujui oleh Admin pusat.',
+              backgroundColor: Colors.orange,
+              colorText: Colors.white,
+            );
+          }
+          return;
+        }
+
+        // 2. Cek apakah user adalah Admin atau Member biasa
+        final profileCheck = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (profileCheck != null) {
+          String role = profileCheck['role'] ?? 'member';
+          if (role == 'admin') {
+            Get.offAll(() => DashboardAdminPage());
+          } else {
+            Get.offAll(() => DashboardMember()); // NAMA CLASS UDAH DIBENERIN
+          }
+          return;
+        }
+
+        // 3. Default jika tidak ada di kedua tabel
+        Get.offAll(() => DashboardMember()); // NAMA CLASS UDAH DIBENERIN
+      }
     } on AuthException catch (error) {
       Get.snackbar(
         'Login Gagal',
@@ -57,7 +101,6 @@ class _LoginPageState extends State<LoginPage> {
         colorText: Colors.white,
       );
     } finally {
-      // Pengaman agar tidak memicu error "setState() called after dispose()"
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -157,8 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
-                          onPressed: () =>
-                              Get.to(() => const RegisterMemberPage()),
+                          onPressed: () => Get.to(() => RegisterMemberPage()),
                           child: const Text(
                             'Daftar Member',
                             style: TextStyle(
@@ -168,8 +210,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () =>
-                              Get.to(() => const RegisterTenantPage()),
+                          onPressed: () => Get.to(() => RegisterTenantPage()),
                           child: const Text(
                             'Daftar Mitra Tenant',
                             style: TextStyle(
