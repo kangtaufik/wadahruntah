@@ -11,7 +11,7 @@ class ScanPaymentPage extends StatefulWidget {
 }
 
 class _ScanPaymentPageState extends State<ScanPaymentPage> {
-  // Inisialisasi pengontrol kamera dari pustaka mobile_scanner
+  // Inisialisasi pengontrol kamera yang disesuaikan dengan versi terbaru
   final MobileScannerController _cameraController = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
@@ -22,12 +22,10 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
 
   @override
   void dispose() {
-    // Memastikan kamera dimatikan secara sistem saat keluar dari halaman
     _cameraController.dispose();
     super.dispose();
   }
 
-  // Fungsi yang dieksekusi secara otomatis saat Kamera mendeteksi Kode QR
   void _onDetect(BarcodeCapture capture) async {
     if (_isProcessing) return;
 
@@ -38,16 +36,12 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
       if (qrData != null) {
         setState(() => _isProcessing = true);
 
-        // Menghentikan pemindaian sementara agar tidak terjadi deteksi ganda
         await _cameraController.stop();
-
-        // Memanggil fungsi untuk menampilkan antarmuka tagihan
         _showPaymentDialog(qrData);
       }
     }
   }
 
-  // Jendela dialog untuk memproses pembayaran berdasarkan ID Member (Hasil Scan)
   void _showPaymentDialog(String memberId) {
     final TextEditingController tagihanController = TextEditingController();
 
@@ -83,7 +77,6 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
       buttonColor: Colors.orange,
       cancelTextColor: Colors.orange,
       onCancel: () {
-        // Jika dibatalkan, kamera diaktifkan kembali untuk memindai ulang
         setState(() => _isProcessing = false);
         _cameraController.start();
       },
@@ -100,13 +93,8 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
         }
 
         // --- MASUKKAN LOGIKA SUPABASE ANDA DI SINI ---
-        // Contoh:
-        // 1. Cek apakah saldo_poin member mencukupi.
-        // 2. Kurangi saldo_poin di tabel profiles.
-        // 3. Tambahkan saldo_poin di tabel tenants.
-        // 4. Catat transaksi di tabel history_transaksi.
 
-        Get.back(); // Menutup dialog
+        Get.back();
         Get.snackbar(
           "Berhasil",
           "Pembayaran sebesar $tagihan poin telah memotong saldo member.",
@@ -114,7 +102,6 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
           colorText: Colors.white,
         );
 
-        // Mengaktifkan kamera kembali setelah transaksi sukses (jika diperlukan)
         setState(() => _isProcessing = false);
         _cameraController.start();
       },
@@ -129,32 +116,15 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
+          // Perbaikan: Menggunakan tombol statis untuk kompatibilitas versi terbaru
           IconButton(
-            icon: ValueListenableBuilder(
-              valueListenable: _cameraController.torchState,
-              builder: (context, state, child) {
-                switch (state) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.grey);
-                  case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.yellow);
-                }
-              },
-            ),
+            icon: const Icon(Icons.flashlight_on, color: Colors.yellow),
+            tooltip: 'Nyalakan/Matikan Senter',
             onPressed: () => _cameraController.toggleTorch(),
           ),
           IconButton(
-            icon: ValueListenableBuilder(
-              valueListenable: _cameraController.cameraFacingState,
-              builder: (context, state, child) {
-                switch (state) {
-                  case CameraFacing.front:
-                    return const Icon(Icons.camera_front);
-                  case CameraFacing.back:
-                    return const Icon(Icons.camera_rear);
-                }
-              },
-            ),
+            icon: const Icon(Icons.flip_camera_android, color: Colors.white),
+            tooltip: 'Putar Kamera',
             onPressed: () => _cameraController.switchCamera(),
           ),
         ],
@@ -163,7 +133,6 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
         children: [
           Expanded(
             flex: 4,
-            // Komponen utama kamera dari mobile_scanner
             child: MobileScanner(
               controller: _cameraController,
               onDetect: _onDetect,
