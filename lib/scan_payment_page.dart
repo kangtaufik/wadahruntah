@@ -11,7 +11,6 @@ class ScanPaymentPage extends StatefulWidget {
 }
 
 class _ScanPaymentPageState extends State<ScanPaymentPage> {
-  // Inisialisasi pengontrol kamera yang disesuaikan dengan versi terbaru
   final MobileScannerController _cameraController = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
@@ -92,15 +91,100 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
           return;
         }
 
-        // --- MASUKKAN LOGIKA SUPABASE ANDA DI SINI ---
-
-        Get.back();
-        Get.snackbar(
-          "Berhasil",
-          "Pembayaran sebesar $tagihan poin telah memotong saldo member.",
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+        Get.dialog(
+          const Center(child: CircularProgressIndicator()),
+          barrierDismissible: false,
         );
+
+        try {
+          // 1. Cek saldo poin milik Member
+          final memberData = await supabase
+              .from('profiles')
+              .select('saldo_poin')
+              .eq('id', memberId)
+              .maybeSingle();
+
+          if (memberData == null) {
+            Get.back();
+            Get.snackbar(
+              "Gagal",
+              "ID Member tidak ditemukan di database.",
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+            return;
+          }
+
+          int saldoMember = memberData['saldo_poin'] ?? 0;
+          if (saldoMember < tagihan) {
+            Get.back();
+            Get.snackbar(
+              "Ditolak",
+              "Saldo poin member tidak mencukupi! (Sisa: $saldoMember Pts)",
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+            return;
+          }
+
+          // 2. Ambil ID Tenant
+          final currentUser = supabase.auth.currentUser;
+          if (currentUser == null) {
+            Get.back();
+            Get.snackbar(
+              "Error",
+              "Sesi login tenant tidak ditemukan.",
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+            return;
+          }
+
+          final tenantData = await supabase
+              .from('tenants')
+              .select('saldo_poin')
+              .eq('id', currentUser.id)
+              .single();
+
+          int saldoTenant = tenantData['saldo_poin'] ?? 0;
+
+          // 3. EKSEKUSI PEMOTONGAN POIN
+          await supabase
+              .from('profiles')
+              .update({'saldo_poin': saldoMember - tagihan})
+              .eq('id', memberId);
+          await supabase
+              .from('tenants')
+              .update({'saldo_poin': saldoTenant + tagihan})
+              .eq('id', currentUser.id);
+
+          // 4. MENCETAK STRUK DIGITAL (HISTORY TRANSAKSI)
+          // --- INI ADALAH LOGIKA BARU UNTUK PENCATATAN ---
+          await supabase.from('history_transaksi').insert({
+            'member_id': memberId,
+            'tenant_id': currentUser.id,
+            'nominal_poin': tagihan,
+          });
+          // -----------------------------------------------
+
+          Get.back(); // Tutup loading
+          Get.back(); // Tutup dialog
+
+          Get.snackbar(
+            "Berhasil",
+            "Pembayaran $tagihan poin sukses dicatat!",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+        } catch (e) {
+          Get.back();
+          Get.snackbar(
+            "Error Sistem",
+            "Terjadi kesalahan: $e",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
 
         setState(() => _isProcessing = false);
         _cameraController.start();
@@ -116,7 +200,6 @@ class _ScanPaymentPageState extends State<ScanPaymentPage> {
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
-          // Perbaikan: Menggunakan tombol statis untuk kompatibilitas versi terbaru
           IconButton(
             icon: const Icon(Icons.flashlight_on, color: Colors.yellow),
             tooltip: 'Nyalakan/Matikan Senter',
