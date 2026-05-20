@@ -42,6 +42,9 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
   bool _isLoading = false;
   bool _obscureText = true;
 
+  // Menambahkan konstanta URL Proxy untuk mengatasi kendala CORS pada platform Web
+  static const String _corsProxy = 'https://corsproxy.io/?';
+
   @override
   void initState() {
     super.initState();
@@ -50,26 +53,24 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
 
   Future<void> _fetchProvinces() async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json',
-        ),
-      );
+      const String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
       if (response.statusCode == 200) {
         setState(() => _provinces = jsonDecode(response.body));
       }
     } catch (e) {
-      print("Gagal mengambil data provinsi: $e");
+      print("Gagal mengambil data Provinsi: $e");
     }
   }
 
   Future<void> _fetchRegencies(String provinceId) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://emsifa.github.io/api-wilayah-indonesia/api/regencies/$provinceId.json',
-        ),
-      );
+      final String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/regencies/$provinceId.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
       if (response.statusCode == 200) {
         setState(() {
           _regencies = jsonDecode(response.body);
@@ -78,17 +79,16 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
         });
       }
     } catch (e) {
-      print("Gagal mengambil data kota: $e");
+      print("Gagal mengambil data Kota/ Kabupaten: $e");
     }
   }
 
   Future<void> _fetchDistricts(String regencyId) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://emsifa.github.io/api-wilayah-indonesia/api/districts/$regencyId.json',
-        ),
-      );
+      final String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/districts/$regencyId.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
       if (response.statusCode == 200) {
         setState(() {
           _districts = jsonDecode(response.body);
@@ -96,22 +96,21 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
         });
       }
     } catch (e) {
-      print("Gagal mengambil data kecamatan: $e");
+      print("Gagal mengambil data Kecamatan: $e");
     }
   }
 
   Future<void> _fetchVillages(String districtId) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://emsifa.github.io/api-wilayah-indonesia/api/villages/$districtId.json',
-        ),
-      );
+      final String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/villages/$districtId.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
       if (response.statusCode == 200) {
         setState(() => _villages = jsonDecode(response.body));
       }
     } catch (e) {
-      print("Gagal mengambil data kelurahan: $e");
+      print("Gagal mengambil data Desa/Kelurahan: $e");
     }
   }
 
@@ -176,7 +175,7 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
             : 'Member Warga';
         Get.snackbar(
           'Pendaftaran Ditolak',
-          'Nomor HP ini sudah terdaftar sebagai $roleTerdaftar. Anda tidak boleh memiliki multi-role.',
+          'Nomor HP ini sudah terdaftar sebagai $roleTerdaftar. Anda tidak boleh menggunakan nomor HP yang sama.',
           backgroundColor: Colors.red,
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
@@ -305,7 +304,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
               const Align(
                 alignment: Alignment.centerLeft,
@@ -315,7 +313,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                 ),
               ),
               const SizedBox(height: 12),
-
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: "Provinsi",
@@ -344,7 +341,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                 },
               ),
               const SizedBox(height: 12),
-
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: "Kota / Kabupaten",
@@ -374,7 +370,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                       },
               ),
               const SizedBox(height: 12),
-
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: "Kecamatan",
@@ -403,7 +398,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                       },
               ),
               const SizedBox(height: 12),
-
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: "Kelurahan / Desa",
@@ -430,7 +424,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                       },
               ),
               const SizedBox(height: 12),
-
               Row(
                 children: [
                   Expanded(
@@ -457,7 +450,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                 ],
               ),
               const SizedBox(height: 12),
-
               TextField(
                 controller: _detailAlamatController,
                 decoration: const InputDecoration(
@@ -465,7 +457,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
-
               const SizedBox(height: 24),
               const Align(
                 alignment: Alignment.centerLeft,
@@ -475,7 +466,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                 ),
               ),
               const SizedBox(height: 8),
-
               Container(
                 height: 250,
                 decoration: BoxDecoration(
@@ -524,7 +514,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                 "Koordinat terpilih: ${_pickedLocation.latitude.toStringAsFixed(6)}, ${_pickedLocation.longitude.toStringAsFixed(6)}",
                 style: const TextStyle(color: Colors.grey),
               ),
-
               const SizedBox(height: 24),
               Container(
                 width: double.infinity,
@@ -566,7 +555,6 @@ class _RegisterMemberPageState extends State<RegisterMemberPage> {
                 ),
               ),
               const SizedBox(height: 32),
-
               _isLoading
                   ? const CircularProgressIndicator(color: Colors.green)
                   : SizedBox(

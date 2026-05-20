@@ -101,7 +101,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          "Pusat Kendali Admin",
+          "Dashboard Admin",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.blue,

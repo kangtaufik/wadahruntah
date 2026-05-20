@@ -43,6 +43,9 @@ class _RegisterTenantPageState extends State<RegisterTenantPage> {
   bool _isLoading = false;
   bool _obscureText = true;
 
+  // Menambahkan konstanta URL Proxy untuk mengatasi kendala CORS pada platform Web
+  static const String _corsProxy = 'https://corsproxy.io/?';
+
   @override
   void initState() {
     super.initState();
@@ -50,53 +53,65 @@ class _RegisterTenantPageState extends State<RegisterTenantPage> {
   }
 
   Future<void> _fetchProvinces() async {
-    final response = await http.get(
-      Uri.parse(
-        'https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json',
-      ),
-    );
-    if (response.statusCode == 200) {
-      setState(() => _provinces = jsonDecode(response.body));
+    try {
+      const String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
+      if (response.statusCode == 200) {
+        setState(() => _provinces = jsonDecode(response.body));
+      }
+    } catch (e) {
+      print("Gagal mengambil data Provinsi: $e");
     }
   }
 
   Future<void> _fetchRegencies(String provinceId) async {
-    final response = await http.get(
-      Uri.parse(
-        'https://emsifa.github.io/api-wilayah-indonesia/api/regencies/$provinceId.json',
-      ),
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        _regencies = jsonDecode(response.body);
-        _districts = [];
-        _villages = [];
-      });
+    try {
+      final String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/regencies/$provinceId.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _regencies = jsonDecode(response.body);
+          _districts = [];
+          _villages = [];
+        });
+      }
+    } catch (e) {
+      print("Gagal mengambil data Kota/Kabupaten: $e");
     }
   }
 
   Future<void> _fetchDistricts(String regencyId) async {
-    final response = await http.get(
-      Uri.parse(
-        'https://emsifa.github.io/api-wilayah-indonesia/api/districts/$regencyId.json',
-      ),
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        _districts = jsonDecode(response.body);
-        _villages = [];
-      });
+    try {
+      final String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/districts/$regencyId.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _districts = jsonDecode(response.body);
+          _villages = [];
+        });
+      }
+    } catch (e) {
+      print("Gagal mengambil data Kecamatan: $e");
     }
   }
 
   Future<void> _fetchVillages(String districtId) async {
-    final response = await http.get(
-      Uri.parse(
-        'https://emsifa.github.io/api-wilayah-indonesia/api/villages/$districtId.json',
-      ),
-    );
-    if (response.statusCode == 200) {
-      setState(() => _villages = jsonDecode(response.body));
+    try {
+      final String targetUrl =
+          'https://emsifa.github.io/api-wilayah-indonesia/api/villages/$districtId.json';
+      final response = await http.get(Uri.parse('$_corsProxy$targetUrl'));
+
+      if (response.statusCode == 200) {
+        setState(() => _villages = jsonDecode(response.body));
+      }
+    } catch (e) {
+      print("Gagal mengambil data Kelurahan/Desa: $e");
     }
   }
 
@@ -167,7 +182,7 @@ class _RegisterTenantPageState extends State<RegisterTenantPage> {
             .getPublicUrl(usahaFileName);
 
         String alamatLengkap =
-            "$_selectedProvinceName, $_selectedRegencyName, Kec. $_selectedDistrictName, Kel/Desa $_selectedVillageName, RT ${_rtController.text}/RW ${_rwController.text}. Jalan/Campung: ${_detailAlamatController.text}";
+            "$_selectedProvinceName, $_selectedRegencyName, Kec. $_selectedDistrictName, Kel/Desa $_selectedVillageName, RT ${_rtController.text}/RW ${_rwController.text}. Jalan/Kampung: ${_detailAlamatController.text}";
 
         await Supabase.instance.client
             .from('profiles')
@@ -187,12 +202,11 @@ class _RegisterTenantPageState extends State<RegisterTenantPage> {
         Get.offAll(() => const SuccessRegisterPage());
       }
     } on AuthException catch (error) {
-      // VALIDASI EMAIL GANDA (RESTRICTION LOGIC)
       String errorMsg = 'Terjadi kesalahan autentikasi.';
       if (error.message.contains('already exists') ||
           error.statusCode == '400') {
         errorMsg =
-            'Email ini sudah terdaftar sebagai Member! Gunakan email lain khusus toko Anda.';
+            'Email ini sudah terdaftar sebagai Member! Gunakan email lain khusus untuk toko Anda.';
       }
       Get.snackbar(
         'Registrasi Gagal',
@@ -249,12 +263,20 @@ class _RegisterTenantPageState extends State<RegisterTenantPage> {
               ),
             ),
             const SizedBox(height: 12),
+
+            // KOLOM KATA SANDI YANG SUDAH DIPERBARUI
             TextField(
               controller: _passwordController,
               obscureText: _obscureText,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Kata Sandi',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureText ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () => setState(() => _obscureText = !_obscureText),
+                ),
               ),
             ),
 

@@ -34,7 +34,7 @@ class _DashboardMemberState extends State<DashboardMember> {
             .single();
 
         setState(() {
-          _namaWarga = data['full_name'] ?? "Member Wadah Runtah";
+          _namaWarga = data['full_name'] ?? "Member Aplikasi Wadah Runtah";
           _saldoPoin = data['saldo_poin'] ?? 0;
           _isLoading = false;
         });
@@ -119,8 +119,12 @@ class _DashboardMemberState extends State<DashboardMember> {
 
   void _showMyQR() {
     final userId = supabase.auth.currentUser!.id;
+    // Data QR tetap menggunakan ID asli agar sistem pembayaran pada Tenant tidak terganggu
     final qrApiUrl =
         "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=$userId";
+
+    // Memodifikasi tampilan ID menjadi format yang lebih rapi dan profesional
+    final displayId = "WR-${userId.substring(0, 6).toUpperCase()}";
 
     Get.defaultDialog(
       title: "QR Code Pembayaran",
@@ -162,11 +166,12 @@ class _DashboardMemberState extends State<DashboardMember> {
           ),
           const SizedBox(height: 14),
           Text(
-            "ID ANDA: ${userId.substring(0, 8).toUpperCase()}...",
+            "ID MEMBER: $displayId",
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
               color: Colors.grey,
+              fontSize: 16,
             ),
           ),
         ],
@@ -245,7 +250,7 @@ class _DashboardMemberState extends State<DashboardMember> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text("Dashboard Member"),
+        title: const Text("Dashboard Member - Wadah Runtah"),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
@@ -310,7 +315,7 @@ class _DashboardMemberState extends State<DashboardMember> {
                           ),
                           const Divider(color: Colors.white38),
                           const Text(
-                            "Tukarkan poin ini menjadi belanjaan di warung mitra.",
+                            "Tukarkan poin ini menjadi belanjaan di toko/ warung mitra tenant.",
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
@@ -351,13 +356,13 @@ class _DashboardMemberState extends State<DashboardMember> {
                         ),
                         _buildMenuCard(
                           Icons.qr_code_scanner,
-                          "Bayar Jajan (QR)",
+                          "Bayar (QR)",
                           Colors.orange,
                           _showMyQR,
                         ),
                         _buildMenuCard(
                           Icons.store,
-                          "Daftar Warung",
+                          "Daftar Toko/ Warung",
                           Colors.teal,
                           _showDaftarMitra,
                         ),
