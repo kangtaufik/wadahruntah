@@ -11,6 +11,10 @@ void main() async {
     url: 'https://apxbviuerlkssbcgefpj.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFweGJ2aXVlcmxrc3NiY2dlZnBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjgxNDksImV4cCI6MjA5MzkwNDE0OX0.dGuIG7Tvlcqvj226rsjLAF4Xp680EYkxM1rhkmwNF-A',
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType:
+          AuthFlowType.pkce, // Gunakan PKCE untuk keamanan Web yang lebih baik
+    ),
   );
 
   runApp(const MyApp());
