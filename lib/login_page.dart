@@ -79,13 +79,13 @@ class _LoginPageState extends State<LoginPage> {
           if (role == 'admin') {
             Get.offAll(() => DashboardAdminPage());
           } else {
-            Get.offAll(() => DashboardMember());
+            Get.offAll(() => DashboardMember()); 
           }
           return;
         }
 
         // 3. Default jika tidak ada di kedua tabel
-        Get.offAll(() => DashboardMember());
+        Get.offAll(() => DashboardMember()); 
       }
     } on AuthException catch (error) {
       Get.snackbar(
