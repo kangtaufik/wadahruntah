@@ -254,8 +254,30 @@ class _DashboardMemberState extends State<DashboardMember> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
+          // LOGOUT SAPU JAGAT DITAMBAHKAN DI SINI
           IconButton(
-            onPressed: () => Get.offAll(() => const LoginPage()),
+            onPressed: () async {
+              try {
+                // 1. Hapus sesi dari server Supabase & Local Storage
+                await Supabase.instance.client.auth.signOut();
+
+                // 2. Hancurkan semua controller/state GetX yang nyangkut di memori
+                Get.deleteAll(force: true);
+
+                // 3. Kasih jeda dikit biar browser beneran nafas buang cache
+                await Future.delayed(const Duration(milliseconds: 300));
+
+                // 4. Tendang ke halaman login
+                Get.offAll(() => const LoginPage());
+              } catch (error) {
+                Get.snackbar(
+                  'Error',
+                  'Gagal logout: $error',
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
+            },
             icon: const Icon(Icons.logout),
           ),
         ],

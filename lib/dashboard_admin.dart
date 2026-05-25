@@ -287,12 +287,13 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   }
 
   Widget _buildImagePreview(String? url) {
-    if (url == null || url.isEmpty)
+    if (url == null || url.isEmpty) {
       return Container(
         height: 150,
         color: Colors.grey[200],
         child: const Center(child: Text("Tidak ada gambar")),
       );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.network(
@@ -323,8 +324,30 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
+          // JURUS LOGOUT SAPU JAGAT DITAMBAHKAN DI SINI
           IconButton(
-            onPressed: () => Get.offAll(() => const LoginPage()),
+            onPressed: () async {
+              try {
+                // 1. Hapus sesi dari server Supabase & Local Storage
+                await Supabase.instance.client.auth.signOut();
+
+                // 2. Hancurkan semua controller/state GetX yang nyangkut di memori
+                Get.deleteAll(force: true);
+
+                // 3. Kasih jeda dikit biar browser beneran nafas buang cache
+                await Future.delayed(const Duration(milliseconds: 300));
+
+                // 4. Tendang ke halaman login
+                Get.offAll(() => const LoginPage());
+              } catch (error) {
+                Get.snackbar(
+                  'Error',
+                  'Gagal logout: $error',
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
+            },
             icon: const Icon(Icons.logout),
           ),
         ],

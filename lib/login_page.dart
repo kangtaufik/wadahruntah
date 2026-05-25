@@ -6,6 +6,7 @@ import 'dashboard_member.dart';
 import 'dashboard_tenant.dart';
 import 'register_member_page.dart';
 import 'register_tenant_page.dart';
+import 'lupa_password.dart'; // IMPORT FILE LUPA PASSWORD BARU
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -78,13 +79,13 @@ class _LoginPageState extends State<LoginPage> {
           if (role == 'admin') {
             Get.offAll(() => DashboardAdminPage());
           } else {
-            Get.offAll(() => DashboardMember()); // NAMA CLASS UDAH DIBENERIN
+            Get.offAll(() => DashboardMember());
           }
           return;
         }
 
         // 3. Default jika tidak ada di kedua tabel
-        Get.offAll(() => DashboardMember()); // NAMA CLASS UDAH DIBENERIN
+        Get.offAll(() => DashboardMember());
       }
     } on AuthException catch (error) {
       Get.snackbar(
@@ -175,7 +176,21 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    // TOMBOL LUPA PASSWORD DITAMBAHKAN DI SINI
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Get.to(() => const LupaPasswordPage()),
+                        child: const Text(
+                          'Lupa Password?',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     _isLoading
                         ? const CircularProgressIndicator(color: Colors.green)
                         : SizedBox(
