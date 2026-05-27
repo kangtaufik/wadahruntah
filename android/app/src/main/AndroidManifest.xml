@@ -1,5 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- INI IZIN INTERNET BIAR DROPDOWN PROVINSI BISA JALAN -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
@@ -27,7 +26,7 @@
         
         <meta-data
             android:name="flutterEmbedding"
-            value="2" />
+            android:value="2" />
     </application>
     
     <queries>
